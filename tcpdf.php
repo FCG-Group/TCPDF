@@ -3114,6 +3114,48 @@ class TCPDF {
 		$this->endPage();
 		// start new page
 		$this->startPage($orientation, $format, $tocpage);
+
+
+		// Kirill 2015-06-12
+		/*
+		(json_encoded value)
+		TCPDF_CONF_PAGES_MARGIN = array(
+										// for page number "1"
+										"1" => array(
+														"top" => 100,
+													),
+
+										// for pages > 2 (3, 4, 5, ...)
+										">2" => array(
+														"top" => 100,
+													),
+										)
+
+		*/
+		if (!empty($GLOBALS["TCPDF_CONF_PAGES_MARGIN"]))
+		{
+			$TCPDF_CONF_PAGE_MARGIN = array();
+			$TCPDF_CONF_PAGES_MARGIN = json_decode($GLOBALS["TCPDF_CONF_PAGES_MARGIN"], true);
+
+			//$this->tMargin = $this->original_tMargin;
+			$this->tMargin = 10;
+
+			if(isset($TCPDF_CONF_PAGES_MARGIN[$this->page]))
+				$TCPDF_CONF_PAGE_MARGIN = $TCPDF_CONF_PAGES_MARGIN[$this->page];
+			else
+			{
+				foreach($TCPDF_CONF_PAGES_MARGIN as $k=>$v)
+					if((substr($k, 0, 1) == ">"))
+						if(intval(substr($k, 1)) < $this->page)
+						{
+							$TCPDF_CONF_PAGE_MARGIN = $TCPDF_CONF_PAGES_MARGIN[$k];
+							//exit();
+						}
+			}
+
+			if(isset($TCPDF_CONF_PAGE_MARGIN["top"]))
+				$this->tMargin = $TCPDF_CONF_PAGE_MARGIN["top"];
+		}
 	}
 
 	/**
@@ -3467,6 +3509,26 @@ class TCPDF {
 	 * @public
 	 */
 	public function Footer() {
+		// TCPDF_CONF_FOOTER_CONTENT (string) Allow text vars {current_page} {total_pages}
+		// TCPDF_CONF_FOOTER_Y_POSITION (-15)
+		if (!empty($GLOBALS["TCPDF_CONF_FOOTER_CONTENT"]))
+		{
+			$footer_content = $GLOBALS["TCPDF_CONF_FOOTER_CONTENT"];
+
+			$footer_content = str_replace("{page_number}", $this->getAliasNumPage(), $footer_content);
+			$footer_content = str_replace("{total_pages}", $this->getAliasNbPages(), $footer_content);
+
+			if (isset($GLOBALS["TCPDF_CONF_FOOTER_Y_POSITION"]))
+				$this->SetY($GLOBALS["TCPDF_CONF_FOOTER_Y_POSITION"]);
+
+			if (isset($GLOBALS["TCPDF_CONF_FOOTER_FONT_NAME"]) && isset($GLOBALS["TCPDF_CONF_FOOTER_FONT_SIZE"]))
+				$this->SetFont($GLOBALS["TCPDF_CONF_FOOTER_FONT_NAME"], '', $GLOBALS["TCPDF_CONF_FOOTER_FONT_SIZE"]);
+
+			$this->writeHTMLCell(0, 0, '', '', $footer_content, 0, 0, false, "C");
+//			$this->writeHTMLCell(0, 0, '', '', "<div>111</div><div>22</div><div>33</div><div>44</div>", 0, 0, false, "C");
+			return;
+		}
+
 		$cur_y = $this->y;
 		$this->SetTextColorArray($this->footer_text_color);
 		//set style for cell border
@@ -16768,6 +16830,7 @@ class TCPDF {
 								$borderstyle = $this->getCSSBorderStyle($dom[$key]['style']['border-'.$bsv]);
 								if (!empty($borderstyle)) {
 									$dom[$key]['border'][$bsk] = $borderstyle;
+									$dom[$key]['border']['mode'] = 'int';				// my patch
 								}
 							}
 							if (isset($dom[$key]['style']['border-'.$bsv.'-color'])) {
@@ -17114,6 +17177,7 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 	 * @public
 	 */
 	public function writeHTML($html, $ln=true, $fill=false, $reseth=false, $cell=false, $align='') {
+		$html = str_replace(' !important;', ';', $html);	// my patch for phpExcel 1.7.9
 		$gvars = $this->getGraphicVars();
 		// store current values
 		$prev_cell_margin = $this->cell_margin;
