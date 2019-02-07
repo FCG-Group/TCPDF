@@ -193,6 +193,13 @@ class tcpdi_parser {
         $this->FilterDecoders = new TCPDF_FILTERS();
         // get xref and trailer data
         $this->xref = $this->getXrefData();
+		if (isset($this->xref["trailer"][1]["/Encrypt"]))		// Currently this library doesn't support encrypted files :/
+		{
+			// TODO: add support of encrypted documents from pdf.js library
+			//trigger_error("Unsupported encrypted file: $uniqueid", E_USER_WARNING);
+			return false;
+		}
+
         $this->findObjectOffsets();
         // parse all document objects
         $this->objects = array();
@@ -512,6 +519,7 @@ class tcpdi_parser {
                     case '/Root':
                     case '/Info':
                     case '/ID':
+                    case '/Encrypt':
                         $xref['trailer'][1][$key] = $v;
                         break;
                     default:

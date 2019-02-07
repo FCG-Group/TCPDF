@@ -95,6 +95,8 @@ class PDFMerger
 			$filepages = $file[1];
 
 			$count = $fpdi->setSourceFile($filename);
+			if (!$count)	// empty or encrypted file
+				continue;
 
 			//add the pages
 			if($filepages == 'all')

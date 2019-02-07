@@ -111,6 +111,16 @@ class TCPDI extends FPDF_TPL {
     }
 
     /**
+     * Check source-file on ecncryption
+     *
+     * @param string $filename a valid filename
+     * @return bool result
+     */
+	function checkOnEncryption($filename) {
+		return $this->_getPdfParser($filename)->getPageCount() === null;
+	}
+
+    /**
      * Set a source-file PDF data
      *
      * @param string $pdfdata The PDF file content
